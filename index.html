@@ -2,142 +2,611 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>找车神器</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>找车 · 原型演示（含硬件自检）</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body {
-    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
-    background:linear-gradient(160deg,#1a2a4a,#0d1428);
-    color:#fff; min-height:100vh; padding:16px; max-width:520px; margin:0 auto;
-  }
-  h1 { font-size:22px; text-align:center; margin:10px 0 4px; }
-  .sub { text-align:center; color:#8fa3c8; font-size:13px; margin-bottom:18px; }
-  .card {
-    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
-    border-radius:16px; padding:16px; margin-bottom:14px;
-  }
-  .btn {
-    display:block; width:100%; padding:15px; border:none; border-radius:12px;
-    font-size:16px; font-weight:600; color:#fff; margin:8px 0; cursor:pointer;
-  }
-  .blue { background:#2f7dff; }
-  .green { background:#22b07d; }
-  .orange { background:#ff8a3d; }
-  .red { background:#ff4d5e; }
-  label { display:block; font-size:13px; color:#9fb2d4; margin:10px 0 6px; }
-  input, textarea {
-    width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,.2);
-    background:rgba(0,0,0,.25); color:#fff; font-size:15px;
-  }
-  textarea { resize:vertical; min-height:60px; }
-  .info { font-size:15px; line-height:1.9; }
-  .info b { color:#ffd54f; }
-  .hidden { display:none; }
-  .tip { font-size:12px; color:#7f93b8; margin-top:8px; line-height:1.6; }
-  .footer { text-align:center; color:#5a6d94; font-size:11px; margin-top:24px; }
+:root{
+  --bg:#070b10; --panel:rgba(255,255,255,.055); --line:rgba(255,255,255,.10);
+  --ok:#39d98a; --warn:#ffb547; --bad:#ff6b6b; --txt:#eef4ff; --sub:#8ea3bd;
+  --brand:#4fd18b; --brand2:#38b6e0;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  overflow:hidden;height:100%;touch-action:none}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;padding:14px 16px calc(14px + env(safe-area-inset-bottom));gap:12px}
+
+/* ===== 通用界面容器 ===== */
+.screen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;padding:22px 18px;overflow-y:auto}
+.screen.on{display:flex;animation:fade .28s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.topbar{width:100%;max-width:440px;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--sub)}
+.back{width:34px;height:34px;border-radius:11px;background:var(--panel);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer}
+h1{font-size:23px;margin:0 0 4px;letter-spacing:.5px}
+.desc{color:var(--sub);font-size:13px;line-height:1.6;margin:0 0 16px;text-align:center}
+
+/* ===== 自检页 ===== */
+.checklist{width:100%;max-width:440px;display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
+.citem{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);
+  border-radius:16px;padding:14px 16px;transition:.3s}
+.citem .ic{font-size:24px;width:34px;text-align:center}
+.citem .meta{flex:1;min-width:0}
+.citem .t{font-size:15px;font-weight:600}
+.citem .d{font-size:12px;color:var(--sub);margin-top:2px}
+.citem .st{font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.st.wait{background:rgba(255,255,255,.07);color:var(--sub)}
+.st.run{background:rgba(56,182,224,.16);color:var(--brand2)}
+.st.ok{background:rgba(57,217,138,.16);color:var(--ok)}
+.st.warn{background:rgba(255,181,71,.16);color:var(--warn)}
+.st.bad{background:rgba(255,107,107,.16);color:var(--bad)}
+.citem.run{border-color:rgba(56,182,224,.5)}
+.citem.ok{border-color:rgba(57,217,138,.4)}
+.citem.warn{border-color:rgba(255,181,71,.45)}
+.citem.bad{border-color:rgba(255,107,107,.45);opacity:.85}
+
+.bar{width:100%;max-width:440px;height:6px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;margin-bottom:4px}
+.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand),var(--brand2));transition:width .35s}
+
+.btn{width:100%;max-width:440px;border:0;border-radius:16px;padding:16px;font-size:16px;font-weight:700;color:#04241a;
+  background:linear-gradient(135deg,var(--brand),var(--brand2));cursor:pointer;transition:.15s}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line);font-weight:600}
+.btn:disabled{opacity:.35;filter:grayscale(.5);cursor:not-allowed}
+.tip{font-size:12px;color:var(--sub);text-align:center;line-height:1.7;max-width:440px}
+
+/* 模拟硬件开关（仅演示用） */
+.sim{width:100%;max-width:440px;margin-top:10px;background:rgba(255,255,255,.03);border:1px dashed var(--line);
+  border-radius:14px;padding:12px 14px}
+.sim .h{font-size:12px;color:var(--sub);margin-bottom:10px;display:flex;justify-content:space-between}
+.sw{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:6px 0}
+.sw input{width:44px;height:26px;appearance:none;background:rgba(255,255,255,.14);border-radius:20px;position:relative;cursor:pointer;transition:.2s}
+.sw input::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked{background:var(--brand)}
+.sw input:checked::after{left:21px}
+
+/* ===== 校准 ∞ 字 ===== */
+.calbox{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;width:100%}
+.infi{width:min(72vw,300px);height:min(72vw,300px);position:relative}
+.infi svg{width:100%;height:100%;overflow:visible}
+.infi path{fill:none;stroke:rgba(255,255,255,.10);stroke-width:3}
+.dot{position:absolute;left:0;top:0;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;
+  background:var(--brand);box-shadow:0 0 18px var(--brand);transition:.05s linear}
+.infi .ring{position:absolute;inset:8%;border:1px dashed rgba(255,255,255,.18);border-radius:50%}
+.calhint{font-size:14px;color:var(--sub);text-align:center;line-height:1.7}
+.calpct{font-size:40px;font-weight:800;background:linear-gradient(135deg,var(--brand),var(--brand2));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ===== 主界面 ===== */
+.compass{position:relative;width:min(76vw,330px);height:min(76vw,330px);margin:6px 0 4px}
+.compass .ring1,.compass .ring2{position:absolute;inset:0;border-radius:50%;border:1px solid var(--line)}
+.compass .ring2{inset:9%;border-color:rgba(255,255,255,.06)}
+.compass .tick{position:absolute;left:50%;top:0;width:2px;height:12px;background:rgba(255,255,255,.35);transform-origin:50% 50%;margin-left:-1px}
+.compass .tick.n{background:var(--brand);height:16px;width:3px;margin-left:-1.5px}
+.compass .north{position:absolute;left:50%;top:8px;transform:translateX(-50%);font-size:11px;font-weight:800;color:var(--brand)}
+.arrow{position:absolute;left:50%;top:50%;width:0;height:0;transition:.08s linear;
+  border-left:15px solid transparent;border-right:15px solid transparent;
+  border-bottom:min(26vw,112px) solid linear-gradient(180deg,var(--brand),var(--brand2));
+  filter:drop-shadow(0 0 14px rgba(79,209,139,.7));transform-origin:50% 0;margin-left:-15px;margin-top:-6px}
+.needle{position:absolute;left:50%;top:50%;width:4px;height:min(20vw,86px);margin-left:-2px;margin-top:calc(min(20vw,86px) / -2);
+  background:linear-gradient(180deg,var(--bad),transparent);border-radius:4px;transform-origin:50% 100%}
+.centerdot{position:absolute;left:50%;top:50%;width:16px;height:16px;border-radius:50%;background:#0b1118;
+  border:3px solid var(--brand);transform:translate(-50%,-50%)}
+.dist{font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1}
+.dist small{font-size:15px;color:var(--sub);font-weight:600;margin-left:3px}
+.dirlab{font-size:13px;color:var(--brand);font-weight:700;margin-top:-4px}
+
+.cards{width:100%;max-width:440px;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.card .ci{font-size:20px;width:28px;text-align:center}
+.card .cm{flex:1}
+.card .cm .ct{font-size:14px;font-weight:700}
+.card .cm .cd{font-size:11.5px;color:var(--sub);margin-top:1px}
+.card .cv{font-size:15px;font-weight:800;text-align:right}
+.card .cv.sub{color:var(--brand2)}
+.pill{font-size:11px;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.07);color:var(--sub);margin-left:6px;font-weight:600}
+.pill.g{background:rgba(57,217,138,.16);color:var(--ok)}
+.pill.w{background:rgba(255,181,71,.16);color:var(--warn)}
+
+.actions{width:100%;max-width:440px;display:flex;gap:10px}
+.actions .btn{flex:1;padding:15px;font-size:15px}
+/* 快照 */
+.shot{width:100%;max-width:440px;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#0d141c;position:relative}
+.shot canvas{width:100%;display:block;aspect-ratio:16/10;object-fit:cover}
+.shot .tag{position:absolute;left:10px;top:10px;font-size:11px;font-weight:700;background:rgba(0,0,0,.55);
+  backdrop-filter:blur(4px);padding:5px 10px;border-radius:20px}
+.shot .num{position:absolute;right:10px;bottom:10px;font-size:20px;font-weight:800;letter-spacing:1px;
+  background:rgba(0,0,0,.6);padding:5px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.2)}
+.nodata{font-size:12px;color:var(--sub);text-align:center;padding:16px}
+
+/* 相机模拟 */
+.cam{position:absolute;inset:0;background:#05080c;display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:18px 18px 26px;z-index:30}
+.cam.on{display:flex}
+.camview{position:absolute;inset:0;background:
+  radial-gradient(circle at 30% 40%,rgba(80,180,255,.16),transparent 55%),
+  radial-gradient(circle at 75% 70%,rgba(120,255,190,.10),transparent 50%),
+  linear-gradient(160deg,#101a26,#060a10);z-index:0}
+.cframe{position:relative;z-index:2;width:min(80vw,300px);height:min(48vw,180px);margin-top:6vh;
+  border:2px dashed rgba(255,255,255,.55);border-radius:14px;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;font-size:12px;color:rgba(255,255,255,.4);text-align:center;line-height:1.6}
+.cframe.flash{animation:fl .5s ease}
+@keyframes fl{0%{background:rgba(255,255,255,.9)}100%{background:transparent}}
+.scanline{position:absolute;left:8%;right:8%;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--brand),transparent);animation:sc 2.4s linear infinite;z-index:3}
+@keyframes sc{0%{top:6%}50%{top:94%}100%{top:6%}}
+.gpsbar{position:relative;z-index:2;display:flex;gap:4px;align-items:center;font-size:12px;color:var(--sub)}
+.bar4{display:flex;gap:3px;align-items:flex-end;height:14px}
+.bar4 i{width:4px;background:var(--ok);border-radius:2px}
+.bar4 i:nth-child(1){height:5px}.bar4 i:nth-child(2){height:8px}.bar4 i:nth-child(3){height:11px}.bar4 i:nth-child(4){height:14px;opacity:.35}
+.shutter{position:relative;z-index:2;width:70px;height:70px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.5);cursor:pointer;transition:.12s}
+.shutter:active{transform:scale(.92)}
+.camhint{position:relative;z-index:2;font-size:12px;color:var(--sub);text-align:center}
+
+/* 识别核对页 */
+.review{width:100%;max-width:440px;display:flex;flex-direction:column;gap:14px}
+.review .shot{margin:0}
+.field{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px 14px}
+.field label{font-size:11px;color:var(--sub);display:block;margin-bottom:6px}
+.field input{width:100%;background:transparent;border:0;color:#fff;font-size:18px;font-weight:700;outline:none;letter-spacing:1px}
+.field.bad input{color:var(--bad)}
+.chiprow{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:12px;padding:6px 12px;border-radius:20px;background:rgba(255,255,255,.07);border:1px solid var(--line);cursor:pointer}
+.chip.on{background:rgba(57,217,138,.2);border-color:var(--brand);color:var(--ok);font-weight:700}
+
+/* 楼层修正弹窗 */
+.mask{position:fixed;inset:0;background:rgba(2,5,9,.72);backdrop-filter:blur(6px);z-index:40;display:none;align-items:flex-end;justify-content:center}
+.mask.on{display:flex}
+.sheet{width:100%;max-width:460px;background:#10171f;border-top:1px solid var(--line);border-radius:22px 22px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));animation:up .26s ease}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+.sheet h2{margin:0 0 4px;font-size:18px}
+.floorlist{display:flex;flex-direction:column;gap:10px;margin:16px 0}
+.floor{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:14px;background:var(--panel);border:1px solid var(--line);cursor:pointer}
+.floor.on{border-color:var(--brand);background:rgba(57,217,138,.12)}
+.floor .fn{font-size:17px;font-weight:800}
+.floor .fd{font-size:12px;color:var(--sub)}
+.sheet .btn{margin-top:6px}
+
+.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
+  background:rgba(20,28,36,.96);border:1px solid var(--line);color:#fff;padding:11px 18px;border-radius:30px;font-size:13px;z-index:99;opacity:0;transition:.25s;pointer-events:none;max-width:86vw;text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.blink{animation:bl .9s ease-in-out infinite alternate}
+@keyframes bl{from{opacity:.45}to{opacity:1}}
 </style>
 </head>
 <body>
-  <h1>🅿️ 找车神器</h1>
-  <div class="sub">停好车，记一笔；回来点一下，马上找到</div>
+<div id="app">
 
-  <div class="card" id="home">
-    <button class="btn green" onclick="saveSpot()">📍 我停这儿了</button>
-    <button class="btn blue" onclick="showFind()">🔍 帮我找车</button>
-    <button class="btn orange" onclick="showNote()">✏️ 记个备注</button>
-    <div class="tip">第一次点“我停这儿了”，浏览器会问是否允许获取位置，点“允许”就行。</div>
+  <!-- ============ 1. 自检页 ============ -->
+  <section class="screen on" id="screen-check">
+    <div class="topbar" style="justify-content:center;margin-top:6px">
+      <span style="color:var(--txt);font-weight:700;font-size:16px">📱 首次硬件自检</span>
+    </div>
+    <p class="desc" style="margin-top:14px">只检查你手机有没有找车要用到的硬件。<b style="color:#fff">缺了某项就隐藏它，绝不用假数据糊弄你。</b></p>
+    <div class="bar" id="checkBar"><i id="checkBarI"></i></div>
+    <div class="checklist" id="checklist"></div>
+    <button class="btn" id="btnStart" disabled onclick="finishCheck()">继续 →</button>
+    <button class="btn ghost" onclick="skipCheck()">跳过自检（不推荐）</button>
+    <p class="tip">自检只在首次打开时完整跑一遍，之后可在「设置 → 重新检测硬件」手动再测。<br>地库里 GPS 本来就是废的，标 ⚠️ 不影响找车。</p>
+
+    <div class="sim">
+      <div class="h"><span>🧪 演示开关（真实 APP 会读你手机硬件）</span></div>
+      <div class="sw">陀螺仪 / 旋转矢量 <input type="checkbox" id="swGyro" checked onchange="rebuildChecks()"></div>
+      <div class="sw">磁力计（指南针） <input type="checkbox" id="swMag" checked onchange="rebuildChecks()"></div>
+      <div class="sw">气压计（相对高度） <input type="checkbox" id="swBaro" checked onchange="rebuildChecks()"></div>
+      <div class="sw">摄像头 <input type="checkbox" id="swCam" checked onchange="rebuildChecks()"></div>
+      <div class="sw">GPS / 北斗 <input type="checkbox" id="swGps" checked onchange="rebuildChecks()"></div>
+    </div>
+  </section>
+
+  <!-- ============ 2. 磁力计校准 ============ -->
+  <section class="screen" id="screen-cal">
+    <div class="topbar"><div class="back" onclick="go('check')">‹</div><span>校准指南针</span></div>
+    <div class="calbox">
+      <div class="calpct" id="calPct">0%</div>
+      <div class="infi">
+        <div class="ring"></div>
+        <svg viewBox="0 0 200 200"><path id="infiPath" d="M100,40 C150,40 165,100 100,100 C35,100 50,160 100,160 C140,160 150,120 120,105 C100,95 85,110 100,125"/></svg>
+        <div class="dot" id="calDot"></div>
+      </div>
+      <div class="calhint">地库钢筋会让指南针偏。<b style="color:#fff">把手机画 ∞ 字（横 8 字）3～5 圈</b>，直到进度满格。<br>电脑上打开时，这里会自动演示。</div>
+      <button class="btn" id="btnCalSkip" onclick="finishCal()">跳过，先试试（方向可能偏）</button>
+    </div>
+  </section>
+
+  <!-- ============ 3. 主界面 ============ -->
+  <section class="screen" id="screen-home">
+    <div class="topbar" style="margin-top:2px">
+      <div class="back" onclick="go('check')" title="重新自检">⚙️</div>
+      <span id="homeTitle" style="flex:1;color:var(--txt);font-weight:700;font-size:15px">找车导航</span>
+      <span class="pill" id="hwPill" onclick="go('check')">硬件全通</span>
+    </div>
+
+    <div class="compass" id="compass">
+      <div class="ring1"></div><div class="ring2"></div>
+      <div class="tick n" style="transform:rotate(0deg)"></div>
+      <div class="tick" style="transform:rotate(45deg)"></div>
+      <div class="tick" style="transform:rotate(135deg)"></div>
+      <div class="tick" style="transform:rotate(225deg)"></div>
+      <div class="tick" style="transform:rotate(315deg)"></div>
+      <div class="north">N</div>
+      <div class="arrow" id="arrow"></div>
+      <div class="needle" id="needle"></div>
+      <div class="centerdot"></div>
+    </div>
+
+    <div class="dirlab" id="dirLab">请把手机竖起来，箭头会指向你的车</div>
+    <div class="dist"><span id="distN">—</span><small id="distU">米</small></div>
+    <div class="dirlab" id="phaseLab" style="color:var(--sub);font-size:12px;margin-top:2px">还没停车 · 先拍张照记住车位</div>
+
+    <div class="cards">
+      <div class="card" id="cardAlt">
+        <div class="ci">🫁</div><div class="cm"><div class="ct">高度 <span class="pill w" id="altPill">推测 B2</span></div>
+          <div class="cd">相对停车时 · 点击修正楼层</div></div>
+        <div class="cv sub" id="altV" onclick="openFloor()">低 3.2 米</div>
+      </div>
+      <div class="card" id="cardSpot">
+        <div class="ci">📸</div><div class="cm"><div class="ct">车位</div><div class="cd" id="spotCd">未记录</div></div>
+        <div class="cv" id="spotV" style="font-size:13px">—</div>
+      </div>
+      <div class="card" id="cardGps">
+        <div class="ci">📡</div><div class="cm"><div class="ct">GPS 书签</div><div class="cd">地库里基本废，只作标记</div></div>
+        <div class="cv" id="gpsV" style="font-size:12px">未定位</div>
+      </div>
+    </div>
+
+    <div class="shot" id="shotWrap" style="display:none">
+      <canvas id="shotCv" width="640" height="400"></canvas>
+      <div class="tag" id="shotTag">📍 已锁定 · 刚刚</div>
+      <div class="num" id="shotNum">B2 · 058</div>
+    </div>
+
+    <div class="actions" style="margin-top:auto;padding-top:10px">
+      <button class="btn" id="btnPark" onclick="openCam()">📷 停车 · 拍张照就记住</button>
+      <button class="btn ghost" id="btnFind" onclick="startFind()" style="flex:1.4">开始找车</button>
+    </div>
+  </section>
+
+  <!-- ============ 4. 相机 ============ -->
+  <div class="cam" id="cam">
+    <div class="camview"></div>
+    <div class="topbar" style="z-index:2;justify-content:space-between">
+      <div class="back" style="background:rgba(0,0,0,.4)" onclick="closeCam()">✕</div>
+      <div class="gpsbar"><div class="bar4"><i></i><i></i><i></i><i></i></div> 地库 · GPS 弱（正常）</div>
+    </div>
+    <div class="cframe" id="cframe">把 <b style="color:#fff">车位号牌</b> 框进来<br>快门瞬间自动记住方向+高度</div>
+    <div class="scanline"></div>
+    <div class="shutter" onclick="snap()"></div>
+    <div class="camhint">拍照即定锚：朝向 + 气压基准 + 照片，一次搞定<br>车位号会自动识别，拍完可改</div>
   </div>
 
-  <div class="card hidden" id="findBox">
-    <div class="info" id="spotInfo">还没记录停车位置～</div>
-    <button class="btn blue" onclick="getSpot()">🔄 重新定位</button>
-    <button class="btn red" onclick="clearSpot()">🗑️ 清除记录</button>
-    <button class="btn" style="background:rgba(255,255,255,.15)" onclick="goHome()">← 返回</button>
+  <!-- ============ 5. 识别核对 ============ -->
+  <section class="screen" id="screen-review">
+    <div class="topbar"><div class="back" onclick="closeCam()">‹</div><span>核对一下，别认错</span></div>
+    <p class="desc">认错一个字母会带你走到隔壁车，所以<b style="color:#fff">请确认这两栏</b>，不对就直接改。</p>
+    <div class="review">
+      <div class="shot">
+        <canvas id="reviewCv" width="640" height="400"></canvas>
+        <div class="tag">识别快照</div>
+        <div class="num" id="reviewNum">B2 · 058</div>
+      </div>
+      <div class="field" id="fFloor">
+        <label>楼层（拍照时识别 / 可改）</label>
+        <input id="iFloor" value="B2" oninput="validateReview()">
+      </div>
+      <div class="field" id="fSpot">
+        <label>车位号（识别结果，可改）</label>
+        <input id="iSpot" value="058" oninput="validateReview()">
+      </div>
+      <div class="chiprow">
+        <div class="chip on" onclick="setChip(this,'iFloor','B1')">B1</div>
+        <div class="chip" onclick="setChip(this,'iFloor','B2')">B2</div>
+        <div class="chip" onclick="setChip(this,'iFloor','B3')">B3</div>
+        <div class="chip" onclick="setChip(this,'iFloor','B4')">B4</div>
+      </div>
+      <div class="chiprow">
+        <div class="chip" onclick="setChip(this,'iSpot','A区')">A区</div>
+        <div class="chip" onclick="setChip(this,'iSpot','B区')">B区</div>
+        <div class="chip" onclick="setChip(this,'iSpot','C区')">C区</div>
+      </div>
+      <button class="btn" id="btnLock" onclick="lockSpot()">✓ 确认锁定，记住车位</button>
+      <button class="btn ghost" onclick="closeCam()">重拍</button>
+    </div>
+  </section>
+
+  <!-- ============ 楼层修正弹窗 ============ -->
+  <div class="mask" id="floorMask" onclick="if(event.target===this)closeFloor()">
+    <div class="sheet">
+      <h2>你在哪一层？</h2>
+      <p class="desc" style="margin-bottom:0">APP 只按气压差显示「低 3.2 米」，楼层是<b style="color:#fff">推测</b>，你亲眼看到牌子就点一下校准。</p>
+      <div class="floorlist" id="floorList"></div>
+      <button class="btn ghost" onclick="closeFloor()">取消</button>
+    </div>
   </div>
 
-  <div class="card hidden" id="noteBox">
-    <label>楼层 / 区号 / 特征（随便写）</label>
-    <input id="floor" placeholder="例：B2层，A区，靠近电梯">
-    <label>车牌号（选填）</label>
-    <input id="plate" placeholder="例：冀A·88888">
-    <label>停车时间（自动填）</label>
-    <input id="time" readonly>
-    <button class="btn green" onclick="saveNote()">💾 保存备注</button>
-    <button class="btn" style="background:rgba(255,255,255,.15)" onclick="goHome()">← 返回</button>
-  </div>
-
-  <div class="footer">数据只存在你自己的手机浏览器里，不会上传任何地方</div>
+  <div class="toast" id="toast"></div>
+</div>
 
 <script>
-  var KEY = 'findmycar_spot';
+/* ================= 状态 ================= */
+const S = {
+  hw:{gyro:1,mag:1,baro:1,cam:1,gps:1},
+  parked:false,
+  floorGuess:'B2', floorReal:null,
+  spot:'', zone:'',
+  anchor:0,        // 停车时“车相对手机”的方位角(deg)
+  pressureBase:null,
+  dist:31,
+  calDone:false,
+  mouse:0
+};
+const $=id=>document.getElementById(id);
+const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2200)};
 
-  function goHome(){
-    document.getElementById('home').classList.remove('hidden');
-    document.getElementById('findBox').classList.add('hidden');
-    document.getElementById('noteBox').classList.add('hidden');
+/* ================= 自检 ================= */
+const CHECKS = [
+  {k:'gyro',ic:'🌀',t:'方向锚点 · 陀螺仪/旋转矢量',d:'箭头永远指车的核心硬件',crit:true},
+  {k:'mag', ic:'🧭',t:'指南针 · 磁力计',d:'给你“车在哪个方向”，地库需校准',crit:true},
+  {k:'baro',ic:'🫁',t:'气压计 · 相对高度',d:'算“低 3.2 米 / 下一层”，不报绝对海拔',crit:false},
+  {k:'cam', ic:'📷',t:'摄像头',d:'拍车 + 拍车位号牌，一次定锚',crit:false},
+  {k:'gps', ic:'📡',t:'GPS / 北斗',d:'地库里基本废，只当室外书签',crit:false,warn:true}
+];
+function rebuildChecks(){
+  ['gyro','mag','baro','cam','gps'].forEach(k=>S.hw[k]=$(`sw${k[0].toUpperCase()+k.slice(1)}`).checked?1:0);
+  renderChecks();
+}
+function mockRead(k){
+  // 模拟“读一下传感器是否真的有数据”，0.6~1.1s
+  return new Promise(r=>setTimeout(()=>r(S.hw[k]),400+Math.random()*500));
+}
+async function renderChecks(){
+  const box=$('checklist');box.innerHTML='';
+  let done=0;
+  CHECKS.forEach((c,i)=>{
+    const ok=S.hw[c.k];
+    const critFail = !ok && c.crit;
+    const warnOnly = !ok && c.warn;
+    let st,stxt,cls;
+    if(ok){st='ok';stxt='有硬件';cls='ok'}
+    else if(warnOnly){st='warn';stxt='弱 / 地库正常';cls='warn'}
+    else if(critFail){st='bad';stxt='缺失';cls='bad'}
+    else{st='warn';stxt='无 · 可降级';cls='warn'}
+    const div=document.createElement('div');
+    div.className='citem '+cls;div.id='ci_'+c.k;
+    div.innerHTML=`<div class="ic">${c.ic}</div><div class="meta"><div class="t">${c.t}</div><div class="d">${c.d}</div></div><div class="st wait" id="st_${c.k}">检测中…</div>`;
+    box.appendChild(div);
+    (async()=>{
+      const has=await mockRead(c.k);
+      const el=document.getElementById('ci_'+c.k),st=el.querySelector('.st');
+      await new Promise(r=>setTimeout(r,100+Math.random()*300));
+      el.className='citem '+(has?(c.warn?'warn':'ok'):(c.crit?'bad':'warn'));
+      if(!has && c.crit){st.className='st bad';st.textContent='缺失'}
+      else if(!has){st.className='st warn';st.textContent=c.warn?'弱':'降级'}
+      else{st.className='st ok';st.textContent='正常'}
+      done++;
+      $('checkBarI').style.width=(done/CHECKS.length*100)+'%';
+      if(done===CHECKS.length)finalizeCheck();
+    })();
+  });
+}
+function finalizeCheck(){
+  const miss=CHECKS.filter(c=>!S.hw[c.k]&&c.crit).length;
+  const btn=$('btnStart');
+  if(miss){
+    $('checkBarI').style.background='linear-gradient(90deg,var(--warn),var(--bad))';
+    btn.disabled=false;btn.textContent='硬件不全，仍能试试 →';
+    toast('缺核心传感器，方向箭头可能不准，其余功能照用');
+  }else{
+    btn.disabled=false;btn.textContent='全部通过，开始校准指南针 →';
   }
-  function showFind(){ document.getElementById('home').classList.add('hidden'); document.getElementById('findBox').classList.remove('hidden'); getSpot(); }
-  function showNote(){
-    document.getElementById('home').classList.add('hidden');
-    document.getElementById('noteBox').classList.remove('hidden');
-    var d = new Date();
-    document.getElementById('time').value = d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
-  }
+}
+function skipCheck(){go('home');syncHome();toast('已跳过自检，可随时在设置里重测')}
+function finishCheck(){go('cal');}
 
-  function saveSpot(){
-    if(!navigator.geolocation){
-      alert('这个浏览器不支持定位，换个浏览器试试（推荐Chrome）'); return;
-    }
-    navigator.geolocation.getCurrentPosition(function(p){
-      var d = new Date();
-      var spot = {
-        lat: p.coords.latitude,
-        lng: p.coords.longitude,
-        time: d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0'),
-        floor: document.getElementById('floor').value,
-        plate: document.getElementById('plate').value
-      };
-      localStorage.setItem(KEY, JSON.stringify(spot));
-      alert('✅ 记下了！回来时点“帮我找车”');
-      goHome();
-    }, function(e){
-      var msg = {1:'你拒绝了定位权限，去浏览器设置里打开',2:'手机信号/GPS没开',3:'定位超时，到窗边再试一次'}[e.code] || '定位失败';
-      alert('⚠️ '+msg);
-    }, {enableHighAccuracy:true, timeout:20000});
-  }
+/* ================= 校准 ∞ 字 ================= */
+let calT=0,calRAF=null,calAuto=true;
+function startCal(){
+  calT=0;calAuto=true;$('calPct').textContent='0%';
+  const path=$('infiPath'),L=path.getTotalLength();
+  const run=()=>{
+    if(!calAuto){return;}
+    calT+=0.0065;
+    if(calT>=1){calAuto=false;calDone=true;clearInterval(window._calI);
+      $('calPct').textContent='100%';$('btnCalSkip').textContent='✓ 校准完成，进入找车';toast('指南针校准好了，箭头会更稳');return;}
+    const p=path.getPointAtLength((calT%1)*L);
+    $('calDot').style.left=(p.x/200*100)+'%';
+    $('calDot').style.top=(p.y/200*100)+'%';
+    $('calPct').textContent=Math.round(calT*100)+'%';
+    calRAF=requestAnimationFrame(run);
+  };
+  window._calI=setInterval(()=>{if(calAuto&&Math.random()<0.35)calT+=0.01},40);
+  run();
+}
+function finishCal(){cancelAnimationFrame(calRAF);clearInterval(window._calI);go('home');syncHome();}
 
-  function getSpot(){
-    var s = localStorage.getItem(KEY);
-    var box = document.getElementById('spotInfo');
-    if(!s){ box.innerHTML = '还没记录停车位置～<br>先去点“📍 我停这儿了”'; return; }
-    var spot = JSON.parse(s);
-    var link = 'https://uri.amap.com/marker?position='+spot.lng+'%2C'+spot.lat+'&name=我的车在这儿';
-    box.innerHTML =
-      '🅿️ <b>停车位置已记录</b><br>' +
-      '🕐 时间：'+spot.time+'<br>' +
-      (spot.floor ? '🏢 位置：'+spot.floor+'<br>' : '') +
-      (spot.plate ? '🚗 车牌：'+spot.plate+'<br>' : '') +
-      '📍 经纬度：'+spot.lat.toFixed(5)+', '+spot.lng.toFixed(5)+'<br><br>' +
-      '<a href="'+link+'" style="color:#7fd6ff;word-break:break-all;">👉 点我打开高德地图导航过去</a>';
+/* ================= 主界面同步 ================= */
+function syncHome(){
+  const critOk = S.hw.gyro&&S.hw.mag;
+  const baroOk = S.hw.baro;
+  $('hwPill').textContent = critOk?(baroOk?'硬件全通':'无气压计·降级'):'传感器缺失';
+  $('hwPill').className='pill '+(critOk?'g':(baroOk?'w':''));
+  // 高度卡
+  const altV=$('altV'),altP=$('altPill');
+  if(!baroOk){
+    altV.textContent='不可用';altV.style.color='var(--sub)';
+    altP.textContent='无气压计';altP.className='pill w';
+    $('cardAlt').querySelector('.cd').textContent='你的手机没有气压计，隐藏高度，靠箭头+车位号';
+  }else if(S.parked){
+    const f=S.floorReal||S.floorGuess;
+    altV.textContent='低 3.2 米';altV.style.color='';
+    altP.textContent='推测 '+f;altP.className='pill w';
+    $('cardAlt').querySelector('.cd').textContent='只报相对高度 · 点击修正楼层（绝不自动判反）';
+  }else{
+    altV.textContent='待停车';altV.style.color='var(--sub)';
+    altP.textContent='等待基准';altP.className='pill';
+    $('cardAlt').querySelector('.cd').textContent='停车拍照那一刻打基准，回来才显示高度差';
   }
+  // 车位卡
+  if(S.parked){
+    $('spotCd').textContent='照片 + 方向锚点已锁定';
+    $('spotV').textContent=(S.zone?S.zone+' ':'')+S.spot;
+    $('shotWrap').style.display='block';
+    drawShot('shotCv',S.spot,S.zone||S.floorGuess);
+    $('shotNum').textContent=(S.zone?S.zone+' · ':'')+S.spot;
+  }else{
+    $('spotCd').textContent='未记录';
+    $('spotV').textContent='—';
+    $('shotWrap').style.display='none';
+  }
+  // GPS 卡
+  $('gpsV').textContent = S.hw.gps?'室外已记 / 地库失效':'未检测';
+  $('gpsV').style.color = S.hw.gps?'var(--warn)':'var(--sub)';
+  // 按钮态
+  $('btnFind').style.opacity = S.parked?1:.45;
+  $('phaseLab').textContent = S.parked ? '已停车 · 点「开始找车」进入返程' : '还没停车 · 先拍张照记住车位';
+}
 
-  function saveNote(){
-    var s = localStorage.getItem(KEY);
-    var spot = s ? JSON.parse(s) : {};
-    spot.floor = document.getElementById('floor').value;
-    spot.plate = document.getElementById('plate').value;
-    localStorage.setItem(KEY, JSON.stringify(spot));
-    alert('✅ 备注已保存');
-    goHome();
-  }
+/* ================= 相机 / 拍照 ================= */
+function openCam(){if(!S.hw.cam){toast('这台机子没摄像头（演示开关关了）');return;}go('cam');}
+function closeCam(){go('home');}
+function snap(){
+  if(!S.hw.mag||!S.hw.gyro){toast('没磁力计/陀螺仪，方向锚点这次没记住，只存了照片');}
+  $('cframe').classList.add('flash');
+  setTimeout(()=>$('cframe').classList.remove('flash'),520);
+  // 快门瞬间：锁朝向 + 气压基准
+  S.anchor = (Math.random()*120+200)%360;   // 真实APP = 停车时方位角
+  S.pressureBase = 1013.25 - (Math.random()*2+2); // 模拟地库偏低气压
+  setTimeout(()=>{go('review');syncReview();},620);
+}
+function drawShot(id,spot,txt){
+  const cv=$(id),x=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  const g=x.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#1b2a3a');g.addColorStop(1,'#0a1018');
+  x.fillStyle=g;x.fillRect(0,0,W,H);
+  // 车位墙 + 号牌
+  x.fillStyle='#243746';x.fillRect(W*0.06,H*0.42,W*0.88,H*0.34);
+  x.fillStyle='#0e1822';x.fillRect(W*0.1,H*0.5,W*0.8,H*0.16);
+  x.strokeStyle='rgba(255,255,255,.12)';x.lineWidth=2;
+  for(let i=0;i<12;i++){x.beginPath();x.moveTo(W*0.1+i*W*0.072,H*0.5);x.lineTo(W*0.1+i*W*0.072,H*0.66);x.stroke();}
+  x.font='bold 64px monospace';x.textAlign='center';x.fillStyle='#ffe9a8';
+  x.fillText((txt||'B2')+' - '+spot,W/2,H*0.62);
+  x.font='20px sans-serif';x.fillStyle='rgba(255,255,255,.35)';
+  x.fillText('演示快照 · 真实APP是摄像头实拍',W/2,H*0.9);
+}
+function syncReview(){
+  drawShot('reviewCv',$('iSpot').value,$('iFloor').value);
+  $('reviewNum').textContent=$('iFloor').value+' · '+$('iSpot').value;
+  validateReview();
+}
+function setChip(el,f,v){
+  const cur=$(f).value;
+  $(f).value = (cur===valOrZone(el)?'':(el.textContent==='A区'||el.textContent==='B区'||el.textContent==='C区'?el.textContent:el.textContent));
+  // 简化：直接设为点击值
+  $(f).value = el.textContent;
+  el.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  syncReview();
+}
+function valOrZone(el){return $(el.parentNode.querySelectorAll('.chip')[0].id?'':'x').value;}
+function validateReview(){
+  const f=$('iFloor').value.trim(),s=$('iSpot').value.trim().replace(/[^A-Za-z0-9]/g,'');
+  $('iSpot').value=s;
+  const ok=/^[Bb]?[1-4]$|^负[一二三四]$|^[Bb][一二三四]$/.test(f)&&s.length>=1;
+  $('fFloor').classList.toggle('bad',!/^[Bb]?[1-4]$|^负[一二三四]$|^[Bb][一二三四]$/.test(f));
+  $('fSpot').classList.toggle('bad',s.length<1);
+  $('btnLock').disabled=!ok;
+  $('reviewNum').textContent=(ok?(f+' · '+s):'⚠️ 格式不对');
+}
+function lockSpot(){
+  S.parked=true;
+  S.floorGuess=$('iFloor').value.trim().toUpperCase();
+  S.spot=$('iSpot').value.trim().toUpperCase();
+  S.zone = /^[ABC]区$/.test(S.spot)?'':(/^[ABC]/i.test(S.spot)?S.spot[0]+'区':'');
+  if(/^[ABC]/i.test(S.spot)&&!S.zone)S.zone=S.spot[0].toUpperCase()+'区';
+  S.dist=28+Math.random()*18;
+  go('home');syncHome();
+  toast('记住了 🚗 '+S.floorGuess+' · '+S.spot+'　打开「开始找车」往箭头走');
+}
 
-  function clearSpot(){
-    if(confirm('确定清除停车记录吗？')){
-      localStorage.removeItem(KEY);
-      document.getElementById('spotInfo').innerHTML = '记录已清除～';
-    }
+/* ================= 返程：箭头 + 漂移 ================= */
+let findOn=false,walkRAF=null,phoneHeading=0;
+function startFind(){
+  if(!S.parked){toast('先停车拍张照呗');return;}
+  if(!S.hw.gyro||!S.hw.mag){toast('没方向传感器，给你看车位号和照片，靠自己找');phase('photo');return;}
+  findOn=true;S.dist=Math.round(S.dist);
+  phoneHeading=0;S.mouse=0;
+  $('phaseLab').textContent='返程中… 手机竖起，让箭头指向车';
+  walk();
+  toast('走了一步就靠近一点，距离会慢慢漂，箭头不漂');
+}
+function phase(p){
+  const el=$('phaseLab');
+  if(p==='near'){el.innerHTML='🎯 <b style="color:var(--ok)">很近了 · 找牌子 '+S.floorGuess+'·'+S.spot+'</b>';}
+  else if(p==='photo'){el.innerHTML='📸 靠车位号收尾：<b style="color:#fff">'+S.floorGuess+' · '+S.spot+'</b>';}
+  else if(p==='done'){el.innerHTML='✅ 找到车啦！';$('distN').textContent='0';$('distU').textContent='米 · 到达';findOn=false;}
+}
+function walk(){
+  if(!findOn)return;
+  // 箭头 = 停车锚点 - 当前手机朝向（纯姿态差，不累加→不漂）
+  const arrowDeg = (S.anchor - phoneHeading + 360)%360;
+  $('arrow').style.transform='rotate('+arrowDeg+'deg)';
+  $('needle').style.transform='rotate('+(phoneHeading%360)+'deg)';
+  // 距离：慢慢走近 + 漂移噪声
+  if(S.dist>0.4){
+    S.dist-=0.09;
+    const noise=(Math.sin(Date.now()/700)+Math.cos(Date.now()/311))*0.25;
+    const d=Math.max(0.4,S.dist+noise);
+    $('distN').textContent=d<8?d.toFixed(1):Math.round(d);
+    $('distU').textContent='米 · 会漂移';
   }
+  const d=S.dist;
+  if(d<0.5)phase('done');
+  else if(d<8)phase('near');
+  walkRAF=requestAnimationFrame(walk);
+}
+// 鼠标/触屏 = 转手机朝向
+function point(e){
+  if(!findOn)return;
+  const r=document.getElementById('compass').getBoundingClientRect();
+  const cx=r.left+r.width/2,cy=r.top+r.height/2;
+  const a=Math.atan2((e.touches?e.touches[0].clientY:e.clientY)-cy,(e.touches?e.touches[0].clientX:e.clientX)-cx);
+  phoneHeading=(a*180/Math.PI+90+360)%360;
+}
+document.addEventListener('mousemove',point);
+document.addEventListener('touchmove',point,{passive:true});
+document.addEventListener('touchend',()=>{if(S.dist<0.6&&findOn)phase('done');});
+
+/* ================= 楼层修正 ================= */
+const FLOORS=['B4','B3','B2','B1','1F'];
+function openFloor(){
+  if(!S.hw.baro){toast('这台机子没气压计，高度功能不可用');return;}
+  const box=$('floorList');box.innerHTML='';
+  FLOORS.forEach(f=>{
+    const dz={B4:-9,B3:-6,B2:-3,B1:0,'1F':3}[f];
+    const div=document.createElement('div');
+    div.className='floor'+( (S.floorReal||S.floorGuess)===f?' on':'');
+    div.innerHTML=`<div><div class="fn">${f}</div><div class="fd">${dz<0?'低 '+(-dz)+' 米':'地面层'}</div></div><div style="font-size:12px;color:var(--sub)">${f===S.floorGuess&&!S.floorReal?'推测':(S.floorReal===f?'已校准':'')}</div>`;
+    div.onclick=()=>{
+      S.floorReal=f;
+      const realDz={B4:9,B3:6,B2:3,B1:0,'1F':-3}[f]; // 相对停车时的“你在哪”：这里展示逻辑 = 停车在B2，你在B1则高3米
+      toast('已校准：你现在 '+(({B4:'低6米',B3:'低3米',B2:'同层',B1:'高3米','1F':'高6米'})[f])+'，车在 '+S.floorGuess);
+      closeFloor();syncHome();
+    };
+    box.appendChild(div);
+  });
+  $('floorMask').classList.add('on');
+}
+function closeFloor(){$('floorMask').classList.remove('on');}
+
+/* ================= 导航 ================= */
+const screens=['check','cal','home','review'];
+function go(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  const el=document.getElementById('screen-'+name);
+  if(el)el.classList.add('on');
+  $('cam').classList.toggle('on',name==='cam');
+  if(name==='home')syncHome();
+  if(name==='cal'&&!calDone)startCal();
+}
+rebuildChecks();
 </script>
 </body>
 </html>
