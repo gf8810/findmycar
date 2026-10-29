@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>找车神器</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:linear-gradient(160deg,#1a2a4a,#0d1428);
+    color:#fff; min-height:100vh; padding:16px; max-width:520px; margin:0 auto;
+  }
+  h1 { font-size:22px; text-align:center; margin:10px 0 4px; }
+  .sub { text-align:center; color:#8fa3c8; font-size:13px; margin-bottom:18px; }
+  .card {
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
+    border-radius:16px; padding:16px; margin-bottom:14px;
+  }
+  .btn {
+    display:block; width:100%; padding:15px; border:none; border-radius:12px;
+    font-size:16px; font-weight:600; color:#fff; margin:8px 0; cursor:pointer;
+  }
+  .blue { background:#2f7dff; }
+  .green { background:#22b07d; }
+  .orange { background:#ff8a3d; }
+  .red { background:#ff4d5e; }
+  label { display:block; font-size:13px; color:#9fb2d4; margin:10px 0 6px; }
+  input, textarea {
+    width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,.2);
+    background:rgba(0,0,0,.25); color:#fff; font-size:15px;
+  }
+  textarea { resize:vertical; min-height:60px; }
+  .info { font-size:15px; line-height:1.9; }
+  .info b { color:#ffd54f; }
+  .hidden { display:none; }
+  .tip { font-size:12px; color:#7f93b8; margin-top:8px; line-height:1.6; }
+  .footer { text-align:center; color:#5a6d94; font-size:11px; margin-top:24px; }
+</style>
+</head>
+<body>
+  <h1>🅿️ 找车神器</h1>
+  <div class="sub">停好车，记一笔；回来点一下，马上找到</div>
+
+  <div class="card" id="home">
+    <button class="btn green" onclick="saveSpot()">📍 我停这儿了</button>
+    <button class="btn blue" onclick="showFind()">🔍 帮我找车</button>
+    <button class="btn orange" onclick="showNote()">✏️ 记个备注</button>
+    <div class="tip">第一次点“我停这儿了”，浏览器会问是否允许获取位置，点“允许”就行。</div>
+  </div>
+
+  <div class="card hidden" id="findBox">
+    <div class="info" id="spotInfo">还没记录停车位置～</div>
+    <button class="btn blue" onclick="getSpot()">🔄 重新定位</button>
+    <button class="btn red" onclick="clearSpot()">🗑️ 清除记录</button>
+    <button class="btn" style="background:rgba(255,255,255,.15)" onclick="goHome()">← 返回</button>
+  </div>
+
+  <div class="card hidden" id="noteBox">
+    <label>楼层 / 区号 / 特征（随便写）</label>
+    <input id="floor" placeholder="例：B2层，A区，靠近电梯">
+    <label>车牌号（选填）</label>
+    <input id="plate" placeholder="例：冀A·88888">
+    <label>停车时间（自动填）</label>
+    <input id="time" readonly>
+    <button class="btn green" onclick="saveNote()">💾 保存备注</button>
+    <button class="btn" style="background:rgba(255,255,255,.15)" onclick="goHome()">← 返回</button>
+  </div>
+
+  <div class="footer">数据只存在你自己的手机浏览器里，不会上传任何地方</div>
+
+<script>
+  var KEY = 'findmycar_spot';
+
+  function goHome(){
+    document.getElementById('home').classList.remove('hidden');
+    document.getElementById('findBox').classList.add('hidden');
+    document.getElementById('noteBox').classList.add('hidden');
+  }
+  function showFind(){ document.getElementById('home').classList.add('hidden'); document.getElementById('findBox').classList.remove('hidden'); getSpot(); }
+  function showNote(){
+    document.getElementById('home').classList.add('hidden');
+    document.getElementById('noteBox').classList.remove('hidden');
+    var d = new Date();
+    document.getElementById('time').value = d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+
+  function saveSpot(){
+    if(!navigator.geolocation){
+      alert('这个浏览器不支持定位，换个浏览器试试（推荐Chrome）'); return;
+    }
+    navigator.geolocation.getCurrentPosition(function(p){
+      var d = new Date();
+      var spot = {
+        lat: p.coords.latitude,
+        lng: p.coords.longitude,
+        time: d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0'),
+        floor: document.getElementById('floor').value,
+        plate: document.getElementById('plate').value
+      };
+      localStorage.setItem(KEY, JSON.stringify(spot));
+      alert('✅ 记下了！回来时点“帮我找车”');
+      goHome();
+    }, function(e){
+      var msg = {1:'你拒绝了定位权限，去浏览器设置里打开',2:'手机信号/GPS没开',3:'定位超时，到窗边再试一次'}[e.code] || '定位失败';
+      alert('⚠️ '+msg);
+    }, {enableHighAccuracy:true, timeout:20000});
+  }
+
+  function getSpot(){
+    var s = localStorage.getItem(KEY);
+    var box = document.getElementById('spotInfo');
+    if(!s){ box.innerHTML = '还没记录停车位置～<br>先去点“📍 我停这儿了”'; return; }
+    var spot = JSON.parse(s);
+    var link = 'https://uri.amap.com/marker?position='+spot.lng+'%2C'+spot.lat+'&name=我的车在这儿';
+    box.innerHTML =
+      '🅿️ <b>停车位置已记录</b><br>' +
+      '🕐 时间：'+spot.time+'<br>' +
+      (spot.floor ? '🏢 位置：'+spot.floor+'<br>' : '') +
+      (spot.plate ? '🚗 车牌：'+spot.plate+'<br>' : '') +
+      '📍 经纬度：'+spot.lat.toFixed(5)+', '+spot.lng.toFixed(5)+'<br><br>' +
+      '<a href="'+link+'" style="color:#7fd6ff;word-break:break-all;">👉 点我打开高德地图导航过去</a>';
+  }
+
+  function saveNote(){
+    var s = localStorage.getItem(KEY);
+    var spot = s ? JSON.parse(s) : {};
+    spot.floor = document.getElementById('floor').value;
+    spot.plate = document.getElementById('plate').value;
+    localStorage.setItem(KEY, JSON.stringify(spot));
+    alert('✅ 备注已保存');
+    goHome();
+  }
+
+  function clearSpot(){
+    if(confirm('确定清除停车记录吗？')){
+      localStorage.removeItem(KEY);
+      document.getElementById('spotInfo').innerHTML = '记录已清除～';
+    }
+  }
+</script>
+</body>
+</html>
